@@ -20,11 +20,23 @@ public class FeedbackResourceManager {
         return INSTANCE;
     }
 
-    public void registerProvider(WinterPlugin plugin, ConfigurationNode node) {
+    public FeedbackResourceManager registerProvider(WinterPlugin plugin, ConfigurationNode node) {
         final var namespace = plugin.namespace();
         final var provider = new FeedbackNodeProvider(node);
 
         providers.put(namespace, provider);
+        return this;
+    }
+
+    /**
+     * Registers a feedback provider.
+     *
+     * @param plugin the plugin that provides the feedback
+     */
+    public FeedbackResourceManager unregisterProvider(WinterPlugin plugin) {
+        final var namespace = plugin.namespace();
+        providers.remove(namespace);
+        return this;
     }
 
     /**

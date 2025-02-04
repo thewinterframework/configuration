@@ -16,6 +16,7 @@ import com.thewinterframework.plugin.WinterPlugin;
 import com.thewinterframework.plugin.module.PluginModule;
 import com.thewinterframework.utils.Reflections;
 import net.kyori.adventure.audience.Audience;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.serialize.TypeSerializer;
 
 import java.io.IOException;
@@ -89,5 +90,9 @@ public class ConfigurateModule implements PluginModule {
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to check if resource exists in class loader", e);
 		}
+	}
+
+	public @NotNull ConfigurateSerializersRegistry registry() {
+		return registry;
 	}
 }

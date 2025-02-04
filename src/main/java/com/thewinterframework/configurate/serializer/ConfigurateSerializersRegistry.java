@@ -11,7 +11,9 @@ import org.spongepowered.configurate.serialize.TypeSerializerCollection;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A registry for {@link TypeSerializer}s.
@@ -19,6 +21,7 @@ import java.util.Map;
 public class ConfigurateSerializersRegistry {
 
 	private final Map<Type, TypeSerializer<?>> serializers = new HashMap<>();
+	private final Set<TypeSerializerCollection> collections = new HashSet<>();
 
 	public ConfigurateSerializersRegistry() {
 		serializers.put(Feedback.class, new FeedbackSpongeSerializer());
@@ -37,6 +40,15 @@ public class ConfigurateSerializersRegistry {
 	}
 
 	/**
+	 * Registers a {@link TypeSerializerCollection} with all serializers.
+	 *
+	 * @param collection the collection to register
+	 */
+	public void registerCollection(TypeSerializerCollection collection) {
+		this.collections.add(collection);
+	}
+
+	/**
 	 * Gets the {@link TypeSerializerCollection} containing all registered serializers.
 	 *
 	 * @return the collection of serializers
@@ -47,7 +59,9 @@ public class ConfigurateSerializersRegistry {
 		for (final var entry : serializers.entrySet()) {
 			collection.register((Class<Object>) entry.getKey(), (TypeSerializer<Object>) entry.getValue());
 		}
-
+		for (final var child : collections) {
+			collection.registerAll(child);
+		}
 		return collection.build();
 	}
 

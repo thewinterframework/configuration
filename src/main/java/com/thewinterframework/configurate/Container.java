@@ -102,7 +102,7 @@ public final class Container<C> {
 				Files.createDirectories(path);
 			}
 
-			final var configPath = generateFile(Container.class, path.resolve(fileName), fileName);
+			final var configPath = generateFile(clazz, path.resolve(fileName), fileName);
 			final var loader = YamlConfigurationLoader.builder()
 					.defaultOptions(options)
 					.nodeStyle(NodeStyle.BLOCK)

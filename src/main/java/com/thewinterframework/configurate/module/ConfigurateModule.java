@@ -63,6 +63,7 @@ public class ConfigurateModule implements PluginModule {
 			final Runnable load = () -> {
 				try {
 					final var feedbackNode = Container.loadNode(
+							plugin.getClass(),
 							plugin.getSLF4JLogger(),
 							path,
 							"lang",

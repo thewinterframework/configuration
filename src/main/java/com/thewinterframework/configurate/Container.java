@@ -130,6 +130,7 @@ public final class Container<C> {
 	 * @throws IOException if an I/O error occurs
 	 */
 	public static ConfigurationNode loadNode(
+			final Class<?> clazz,
 			final Logger logger,
 			final Path path,
 			final String file,
@@ -141,7 +142,7 @@ public final class Container<C> {
 				Files.createDirectories(path);
 			}
 
-			final var configPath = generateFile(Container.class, path.resolve(fileName), fileName);
+			final var configPath = generateFile(clazz, path.resolve(fileName), fileName);
 			final YamlConfigurationLoader loader = YamlConfigurationLoader.builder()
 					.defaultOptions(options)
 					.nodeStyle(NodeStyle.BLOCK)

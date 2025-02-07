@@ -175,6 +175,48 @@ public final class Container<C> {
 		return load(logger, path, clazz, file, opts -> opts.shouldCopyDefaults(true));
 	}
 
+	/**
+	 * Loads a configuration file.
+	 * @param logger the logger
+	 * @param path the path to the configuration file
+	 * @param clazz the class of the configuration object
+	 * @param file the name of the configuration file
+	 * @param clazzLoader the class loader
+	 * @return the container
+	 * @param <C> the type of the configuration object
+     */
+	public static <C> Container<C> load(
+			final Logger logger,
+			final Path path,
+			final Class<C> clazz,
+			final String file,
+			final Class<?> clazzLoader
+	) throws IOException {
+		try {
+			final var mapper = ObjectMapper.factory().get(clazz);
+			final var typeToken = TypeToken.get(clazz);
+			final var fileName = file.endsWith(".yml") ? file : file + ".yml";
+			if (!Files.exists(path)) {
+				Files.createDirectories(path);
+			}
+
+			final var configPath = generateFile(clazzLoader, path.resolve(fileName), fileName);
+			final var loader = YamlConfigurationLoader.builder()
+					.nodeStyle(NodeStyle.BLOCK)
+					.path(configPath)
+					.build();
+
+			final var node = loader.load();
+			final C newConfig = node.get(typeToken);
+
+			node.set(typeToken, newConfig);
+			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger);
+		} catch (final IOException exception) {
+			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
+			throw exception;
+		}
+	}
+
 	private static Path generateFile(final Class<?> clazz, final Path path, final String name) throws IOException {
 		if (Files.exists(path)) {
 			return path;

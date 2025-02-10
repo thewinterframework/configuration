@@ -1,4 +1,4 @@
-package com.thewinterframework.configurate.serializer;
+package com.thewinterframework.configurate.serializer.provider;
 
 import com.google.inject.ScopeAnnotation;
 
@@ -8,10 +8,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * An annotation that specifies that a class is a Configurate serializer.
+ * An annotation that specifies that a class is a Configurate serializer provider.
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ScopeAnnotation
-public @interface ConfigurateSerializer {
+public @interface ConfigurateSerializerProvider {
 }

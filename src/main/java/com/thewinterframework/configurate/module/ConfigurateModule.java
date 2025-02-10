@@ -55,6 +55,7 @@ public class ConfigurateModule implements PluginModule {
 					if (method.isAnnotationPresent(ConfigurateSerializer.class)) {
 						final var returnType = method.getReturnType();
 						if (TypeSerializer.class.isAssignableFrom(returnType)) {
+							method.setAccessible(true);
 							final var serializer = (TypeSerializer<?>) method.invoke(instance);
 							this.registry.registerSerializer(Reflections.getGenericType(returnType, TypeSerializer.class, 0), serializer);
 						} else if (TypeSerializerCollection.class.isAssignableFrom(returnType)) {

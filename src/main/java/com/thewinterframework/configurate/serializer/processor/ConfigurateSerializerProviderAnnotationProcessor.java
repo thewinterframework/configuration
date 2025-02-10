@@ -1,6 +1,7 @@
 package com.thewinterframework.configurate.serializer.processor;
 
 import com.thewinterframework.configurate.serializer.ConfigurateSerializer;
+import com.thewinterframework.configurate.serializer.provider.ConfigurateSerializerProvider;
 import com.thewinterframework.processor.provider.ClassListProviderAnnotationProcessor;
 
 import java.lang.annotation.Annotation;
@@ -14,6 +15,6 @@ public class ConfigurateSerializerProviderAnnotationProcessor extends ClassListP
 
   @Override
   protected Set<Class<? extends Annotation>> getSupportedAnnotations() {
-    return Set.of();
+    return Set.of(ConfigurateSerializerProvider.class);
   }
 }

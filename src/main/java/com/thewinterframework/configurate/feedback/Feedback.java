@@ -4,6 +4,7 @@ import com.thewinterframework.configurate.feedback.resource.FeedbackResourceMana
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.jetbrains.annotations.ApiStatus;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
 /**
@@ -18,7 +19,19 @@ public interface Feedback {
      * @param audience the audience to send the feedback to
      * @param resolver the tag resolvers to use
      */
-    void sendFeedback(Audience audience, TagResolver... resolver);
+    @Deprecated
+    @ApiStatus.ScheduledForRemoval(inVersion = "2.0.0")
+    default void sendFeedback(Audience audience, TagResolver... resolver) {
+        send(audience, resolver);
+    }
+
+    /**
+     * Sends the feedback to the specified {@link Audience}.
+     *
+     * @param audience the audience to send the feedback to
+     * @param resolver the tag resolvers to use
+     */
+    void send(Audience audience, TagResolver... resolver);
 
     /**
      * Creates a feedback that sends a component message to the audience.

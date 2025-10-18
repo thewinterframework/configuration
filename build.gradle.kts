@@ -61,7 +61,7 @@ dependencies {
     annotationProcessor("com.thewinterframework:core:1.0.1")
 
     // Configurate
-    compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0-SNAPSHOT")
+    compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")
 }
 
 tasks.withType<JavaCompile> {

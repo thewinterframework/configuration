@@ -77,6 +77,37 @@ public final class Container<C> {
 	}
 
 	/**
+	 * Updates the configuration object using the provided updater function.
+	 * @param updater the function to apply to the current config
+	 * @return {@code true} if the update and save were successful, {@code false} otherwise
+	 */
+	public boolean update(UnaryOperator<C> updater) {
+		try {
+			final C newConfig = updater.apply(config.get());
+			config.set(newConfig);
+			node.set(typeToken, newConfig);
+			return save();
+		} catch (final Exception exception) {
+			logger.error("Could not update {} configuration", clazz.getSimpleName(), exception);
+			return false;
+		}
+	}
+
+	/**
+	 * Saves the current configuration to the file.
+	 * @return {@code true} if the save was successful, {@code false} otherwise
+	 */
+	public boolean save() {
+		try {
+			loader.save(node);
+			return true;
+		} catch (final IOException exception) {
+			logger.error("Could not save {} configuration file", clazz.getSimpleName(), exception);
+			return false;
+		}
+	}
+
+	/**
 	 * Loads a configuration file.
 	 * @param logger the logger
 	 * @param path the path to the configuration file

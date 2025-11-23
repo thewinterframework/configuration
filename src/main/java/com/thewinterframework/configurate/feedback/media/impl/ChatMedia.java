@@ -21,7 +21,7 @@ public record ChatMedia(List<String> messages) implements FeedbackMedia {
 
     @Override
     public void sendMedia(final Audience audience, final TagResolver... resolvers) {
-        messages.forEach(message -> audience.sendMessage(ComponentUtils.miniMessage(message, resolvers)));
+        messages.forEach(message -> audience.sendMessage(ComponentUtils.miniMessage(message, true, resolvers)));
     }
 
     @Override

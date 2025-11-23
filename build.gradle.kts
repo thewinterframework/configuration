@@ -7,6 +7,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
     maven("https://repo.kryptonmc.org/releases")
@@ -57,8 +58,8 @@ deployer {
 
 dependencies {
     // Core
-    compileOnlyApi("com.thewinterframework:core:1.0.1")
-    annotationProcessor("com.thewinterframework:core:1.0.1")
+    compileOnlyApi("com.thewinterframework:core:1.0.5")
+    annotationProcessor("com.thewinterframework:core:1.0.5")
 
     // Configurate
     compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")

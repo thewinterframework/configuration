@@ -4,6 +4,7 @@ import com.thewinterframework.component.ComponentUtils;
 import com.thewinterframework.configurate.feedback.media.FeedbackMedia;
 import com.thewinterframework.configurate.feedback.media.MediaType;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,6 +23,12 @@ public record ChatMedia(List<String> messages) implements FeedbackMedia {
     @Override
     public void sendMedia(final Audience audience, final TagResolver... resolvers) {
         messages.forEach(message -> audience.sendMessage(ComponentUtils.miniMessage(message, true, resolvers)));
+    }
+
+    public List<Component> messages(TagResolver... resolvers) {
+        return messages.stream()
+            .map(msg -> ComponentUtils.miniMessage(msg, true, resolvers))
+            .toList();
     }
 
     @Override

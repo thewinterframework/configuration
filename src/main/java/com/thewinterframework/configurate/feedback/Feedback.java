@@ -1,11 +1,17 @@
 package com.thewinterframework.configurate.feedback;
 
+import com.thewinterframework.component.ComponentJoiner;
+import com.thewinterframework.component.ComponentUtils;
 import com.thewinterframework.configurate.feedback.resource.FeedbackResourceManager;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Represents a feedback type that can be sent to an {@link Audience}.
@@ -32,6 +38,26 @@ public interface Feedback {
      * @param resolver the tag resolvers to use
      */
     void send(Audience audience, TagResolver... resolver);
+
+    /**
+     * Converts the feedback to a component.
+     *
+     * @param resolver the tag resolvers to use
+     * @return the component representation of the feedback
+     * @throws IllegalStateException if the feedback cannot be converted to a component
+     */
+    default @NotNull Component asComponent(TagResolver... resolver) throws IllegalStateException {
+        return ComponentJoiner.newLine(this.asComponents(resolver));
+    }
+
+    /**
+     * Converts the feedback to a list of components.
+     *
+     * @param resolver the tag resolvers to use
+     * @return the list of component representation of the feedback
+     * @throws IllegalStateException if the feedback cannot be converted to components
+     */
+    @NotNull List<Component> asComponents(TagResolver... resolver) throws IllegalStateException;
 
     /**
      * Creates a feedback that sends a component message to the audience.

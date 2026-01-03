@@ -2,6 +2,7 @@ package com.thewinterframework.configurate.feedback;
 
 import com.thewinterframework.component.ComponentJoiner;
 import com.thewinterframework.component.ComponentUtils;
+import com.thewinterframework.configurate.feedback.media.impl.ChatMedia;
 import com.thewinterframework.configurate.feedback.resource.FeedbackResourceManager;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -66,7 +67,18 @@ public interface Feedback {
      * @return the created feedback
      */
     static Feedback plain(Component message) {
-        return (audience, resolver) -> audience.sendMessage(message);
+        return new Feedback() {
+
+            @Override
+            public void send(Audience audience, TagResolver... resolver) {
+                audience.sendMessage(message);
+            }
+
+            @Override
+            public @NotNull List<Component> asComponents(TagResolver... resolver) throws IllegalStateException {
+                return List.of(message);
+            }
+        };
     }
 
     /**

@@ -12,6 +12,7 @@ import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.net.URL;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
@@ -27,6 +28,7 @@ public final class Container<C> {
 	private final TypeToken<C> typeToken;
 	private final ObjectMapper<C> mapper;
 	private final Logger logger;
+	private final URL defaultUrl;
 
 	private Container(
 			final C config,
@@ -35,7 +37,8 @@ public final class Container<C> {
 			final YamlConfigurationLoader loader,
 			final ConfigurationNode node,
 			final ObjectMapper<C> mapper,
-			final Logger logger
+			final Logger logger,
+			final URL defaultUrl
 	) {
 		this.config = new AtomicReference<>(config);
 		this.loader = loader;
@@ -44,6 +47,7 @@ public final class Container<C> {
 		this.node = node;
 		this.mapper = mapper;
 		this.logger = logger;
+		this.defaultUrl = defaultUrl;
 	}
 
 	/**
@@ -52,12 +56,25 @@ public final class Container<C> {
 	 */
 	public boolean reload() {
 		try {
-			final ConfigurationNode node = loader.load();
-			final C newConfig = mapper.load(node);
+			final ConfigurationNode reloadedNode = loader.load();
+			if (defaultUrl != null) {
+				try {
+					final var defaultLoader = YamlConfigurationLoader.builder()
+							.nodeStyle(NodeStyle.BLOCK)
+							.url(defaultUrl)
+							.build();
+					final var defaultNode = defaultLoader.load();
+					reloadedNode.mergeFrom(defaultNode);
+				} catch (final Exception exception) {
+					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
+				}
+			}
+			final C newConfig = mapper.load(reloadedNode);
+			this.node.from(reloadedNode);
 			node.set(typeToken, newConfig);
 			config.set(newConfig);
-			return true;
-		} catch (final IOException exception) {
+			return save();
+		} catch (final Exception exception) {
 			logger.error("Could not reload {} configuration file", clazz.getSimpleName(), exception);
 			return false;
 		}
@@ -141,10 +158,27 @@ public final class Container<C> {
 					.build();
 
 			final var node = loader.load();
+
+			URL defaultUrl = clazz.getClassLoader().getResource(fileName);
+			if (defaultUrl != null) {
+				try {
+					final var defaultLoader = YamlConfigurationLoader.builder()
+							.nodeStyle(NodeStyle.BLOCK)
+							.url(defaultUrl)
+							.build();
+					final var defaultNode = defaultLoader.load();
+					node.mergeFrom(defaultNode);
+				} catch (final Exception exception) {
+					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
+				}
+			}
+
 			final C newConfig = node.get(typeToken);
 
 			node.set(typeToken, newConfig);
-			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger);
+			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl);
+			container.save();
+			return container;
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
 			throw exception;
@@ -238,10 +272,27 @@ public final class Container<C> {
 					.build();
 
 			final var node = loader.load();
+
+			final URL defaultUrl = clazzLoader.getResource(fileName);
+			if (defaultUrl != null) {
+				try {
+					final var defaultLoader = YamlConfigurationLoader.builder()
+							.nodeStyle(NodeStyle.BLOCK)
+							.url(defaultUrl)
+							.build();
+					final var defaultNode = defaultLoader.load();
+					node.mergeFrom(defaultNode);
+				} catch (final Exception exception) {
+					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
+				}
+			}
+
 			final C newConfig = node.get(typeToken);
 
 			node.set(typeToken, newConfig);
-			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger);
+			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl);
+			container.save();
+			return container;
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
 			throw exception;

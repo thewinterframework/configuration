@@ -10,6 +10,7 @@ import org.spongepowered.configurate.yaml.NodeStyle;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.io.IOException;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.net.URL;
@@ -29,6 +30,7 @@ public final class Container<C> {
 	private final ObjectMapper<C> mapper;
 	private final Logger logger;
 	private final URL defaultUrl;
+	private final Path configPath;
 
 	private Container(
 			final C config,
@@ -38,7 +40,8 @@ public final class Container<C> {
 			final ConfigurationNode node,
 			final ObjectMapper<C> mapper,
 			final Logger logger,
-			final URL defaultUrl
+			final URL defaultUrl,
+			final Path configPath
 	) {
 		this.config = new AtomicReference<>(config);
 		this.loader = loader;
@@ -48,6 +51,7 @@ public final class Container<C> {
 		this.mapper = mapper;
 		this.logger = logger;
 		this.defaultUrl = defaultUrl;
+		this.configPath = configPath;
 	}
 
 	/**
@@ -71,9 +75,8 @@ public final class Container<C> {
 			}
 			final C newConfig = mapper.load(reloadedNode);
 			this.node.from(reloadedNode);
-			node.set(typeToken, newConfig);
 			config.set(newConfig);
-			return save();
+			return saveWithComments();
 		} catch (final Exception exception) {
 			logger.error("Could not reload {} configuration file", clazz.getSimpleName(), exception);
 			return false;
@@ -103,7 +106,7 @@ public final class Container<C> {
 			final C newConfig = updater.apply(config.get());
 			config.set(newConfig);
 			node.set(typeToken, newConfig);
-			return save();
+			return saveWithComments();
 		} catch (final Exception exception) {
 			logger.error("Could not update {} configuration", clazz.getSimpleName(), exception);
 			return false;
@@ -115,8 +118,20 @@ public final class Container<C> {
 	 * @return {@code true} if the save was successful, {@code false} otherwise
 	 */
 	public boolean save() {
+		return saveWithComments();
+	}
+
+	/**
+	 * Saves the current configuration to the file, preserving comments
+	 * from the resource template when available.
+	 */
+	private boolean saveWithComments() {
 		try {
-			loader.save(node);
+			if (defaultUrl != null && configPath != null) {
+				YamlCommentWriter.writeWithComments(configPath, defaultUrl, node);
+			} else {
+				loader.save(node);
+			}
 			return true;
 		} catch (final IOException exception) {
 			logger.error("Could not save {} configuration file", clazz.getSimpleName(), exception);
@@ -175,9 +190,8 @@ public final class Container<C> {
 
 			final C newConfig = node.get(typeToken);
 
-			node.set(typeToken, newConfig);
-			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl);
-			container.save();
+			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
+			container.saveWithComments();
 			return container;
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
@@ -289,9 +303,8 @@ public final class Container<C> {
 
 			final C newConfig = node.get(typeToken);
 
-			node.set(typeToken, newConfig);
-			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl);
-			container.save();
+			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
+			container.saveWithComments();
 			return container;
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
@@ -300,16 +313,23 @@ public final class Container<C> {
 	}
 
 	private static Path generateFile(final Class<?> clazz, final Path path, final String name) throws IOException {
-		if (Files.exists(path)) {
+		if (Files.exists(path) && Files.size(path) > 0) {
 			return path;
 		}
 
 		try (final var rsc = clazz.getClassLoader().getResourceAsStream(name)) {
 			if (rsc == null) {
-				throw new IOException("Could not find resource " + path.getFileName());
+				if (!Files.exists(path)) {
+					throw new IOException("Could not find resource " + path.getFileName());
+				}
+				return path;
 			}
 
-			Files.copy(rsc, path);
+			if (Files.exists(path)) {
+				Files.copy(rsc, path, StandardCopyOption.REPLACE_EXISTING);
+			} else {
+				Files.copy(rsc, path);
+			}
 			return path;
 		}
 	}

@@ -15,8 +15,7 @@ import java.util.*;
  */
 final class YamlCommentWriter {
 
-	private YamlCommentWriter() {
-	}
+	private YamlCommentWriter() {}
 
 	static void writeWithComments(
 			final Path configPath,
@@ -25,7 +24,7 @@ final class YamlCommentWriter {
 	) throws IOException {
 		
 		// 1. Read default lines
-		List<String> defaultLines = new ArrayList<>();
+		final var defaultLines = new ArrayList<String>();
 		try (final var reader = new BufferedReader(new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
@@ -37,7 +36,7 @@ final class YamlCommentWriter {
 		// 2. Read user lines (if file exists)
 		YamlNode userTree;
 		if (Files.exists(configPath) && Files.size(configPath) > 0) {
-			List<String> userLines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
+			final var userLines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
 			userTree = parse(userLines);
 		} else {
 			userTree = defaultTree;
@@ -48,7 +47,7 @@ final class YamlCommentWriter {
 		mergeTrees(userTree, defaultTree, 0);
 
 		// 4. Serialize back to lines, updating values from mergedNode
-		List<String> outputLines = new ArrayList<>();
+		final var outputLines = new ArrayList<String>();
 		serialize(userTree, mergedNode, outputLines);
 
 		// 5. Write to disk
@@ -65,31 +64,31 @@ final class YamlCommentWriter {
 	}
 
 	private static YamlNode parse(List<String> lines) {
-		YamlNode root = new YamlNode();
-		YamlNode current = root;
-		List<YamlNode> stack = new ArrayList<>();
+		final var root = new YamlNode();
+		var current = root;
+		final var stack = new ArrayList<YamlNode>();
 		stack.add(root);
 
-		List<String> pendingComments = new ArrayList<>();
+		final var pendingComments = new ArrayList<String>();
 
-		for (String line : lines) {
-			String trimmed = line.trim();
+		for (final var line : lines) {
+			final var trimmed = line.trim();
 			if (trimmed.isEmpty() || trimmed.startsWith("#")) {
 				pendingComments.add(line);
 				continue;
 			}
 
-			int colonIndex = findUnquotedColon(trimmed);
+			final var colonIndex = findUnquotedColon(trimmed);
 			if (colonIndex >= 0 && !trimmed.startsWith("-")) {
 
-				int indent = countLeadingSpaces(line);
+				final var indent = countLeadingSpaces(line);
 
 				while (stack.size() > 1 && stack.get(stack.size() - 1).indent >= indent) {
 					stack.remove(stack.size() - 1);
 				}
-				YamlNode parent = stack.get(stack.size() - 1);
+				final var parent = stack.get(stack.size() - 1);
 
-				YamlNode node = new YamlNode();
+				final var node = new YamlNode();
 				node.key = unquote(trimmed.substring(0, colonIndex).trim());
 				node.indent = indent;
 				node.comments.addAll(pendingComments);
@@ -110,35 +109,35 @@ final class YamlCommentWriter {
 	}
 
 	private static void mergeTrees(YamlNode userNode, YamlNode defaultNode, int indentDelta) {
-		for (Map.Entry<String, YamlNode> entry : defaultNode.children.entrySet()) {
-			String key = entry.getKey();
-			YamlNode defChild = entry.getValue();
+		for (final var entry : defaultNode.children.entrySet()) {
+			final var key = entry.getKey();
+			final var defChild = entry.getValue();
 
 			if (!userNode.children.containsKey(key)) {
 				userNode.children.put(key, cloneAndAdjustIndent(defChild, indentDelta));
 			} else {
-				YamlNode userChild = userNode.children.get(key);
-				int newDelta = userChild.indent - defChild.indent;
+				final var userChild = userNode.children.get(key);
+				final var newDelta = userChild.indent - defChild.indent;
 				mergeTrees(userChild, defChild, newDelta);
 			}
 		}
 	}
 
 	private static YamlNode cloneAndAdjustIndent(YamlNode node, int indentDelta) {
-		YamlNode clone = new YamlNode();
+		final var clone = new YamlNode();
 		clone.key = node.key;
 		clone.indent = node.indent + indentDelta;
 
-		for (String comment : node.comments) {
+		for (final var comment : node.comments) {
 			clone.comments.add(adjustIndent(comment, indentDelta));
 		}
 		if (node.keyLine != null) {
 			clone.keyLine = adjustIndent(node.keyLine, indentDelta);
 		}
-		for (String valLine : node.valueLines) {
+		for (final var valLine : node.valueLines) {
 			clone.valueLines.add(adjustIndent(valLine, indentDelta));
 		}
-		for (Map.Entry<String, YamlNode> entry : node.children.entrySet()) {
+		for (final var entry : node.children.entrySet()) {
 			clone.children.put(entry.getKey(), cloneAndAdjustIndent(entry.getValue(), indentDelta));
 		}
 		return clone;
@@ -149,7 +148,7 @@ final class YamlCommentWriter {
 		if (delta > 0) {
 			return " ".repeat(delta) + line;
 		} else {
-			int remove = Math.min(-delta, countLeadingSpaces(line));
+			final var remove = Math.min(-delta, countLeadingSpaces(line));
 			return line.substring(remove);
 		}
 	}
@@ -158,15 +157,15 @@ final class YamlCommentWriter {
 		out.addAll(node.comments);
 
 		if (node.keyLine != null) {
-			String line = node.keyLine;
+			var line = node.keyLine;
 
 			if (configNode != null && !configNode.virtual() && configNode.raw() != null && !configNode.isMap() && !configNode.isList()) {
-				int colonIndex = findUnquotedColon(line);
+				final var colonIndex = findUnquotedColon(line);
 				if (colonIndex >= 0) {
-					String prefix = line.substring(0, colonIndex + 1);
-					String afterColon = line.substring(colonIndex + 1);
-					String inlineComment = extractInlineComment(afterColon);
-					String newValue = formatScalar(configNode.raw());
+					final var prefix = line.substring(0, colonIndex + 1);
+					final var afterColon = line.substring(colonIndex + 1);
+					final var inlineComment = extractInlineComment(afterColon);
+					final var newValue = formatScalar(configNode.raw());
 					
 					if (inlineComment != null) {
 						line = prefix + " " + newValue + " " + inlineComment;
@@ -180,8 +179,8 @@ final class YamlCommentWriter {
 
 		out.addAll(node.valueLines);
 
-		for (Map.Entry<String, YamlNode> entry : node.children.entrySet()) {
-			ConfigurationNode childConfig = configNode != null ? configNode.node(entry.getKey()) : null;
+		for (final var entry : node.children.entrySet()) {
+			final var childConfig = configNode != null ? configNode.node(entry.getKey()) : null;
 			serialize(entry.getValue(), childConfig, out);
 		}
 	}
@@ -247,7 +246,7 @@ final class YamlCommentWriter {
 		if (value instanceof Boolean || value instanceof Number) {
 			return value.toString();
 		}
-		final String str = value.toString();
+		final var str = value.toString();
 		if (needsQuoting(str)) {
 			return "\"" + str.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
 		}

@@ -58,8 +58,8 @@ deployer {
 
 dependencies {
     // Core
-    compileOnlyApi("com.thewinterframework:core:1.0.5")
-    annotationProcessor("com.thewinterframework:core:1.0.5")
+    compileOnlyApi("com.thewinterframework:core:1.0.6")
+    annotationProcessor("com.thewinterframework:core:1.0.6")
 
     // Configurate
     compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")

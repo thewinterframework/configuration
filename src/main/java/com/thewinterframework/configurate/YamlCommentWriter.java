@@ -71,18 +71,34 @@ final class YamlCommentWriter {
 
 		final var pendingComments = new ArrayList<String>();
 
+		var insideOpenQuote = false;  
+		var openQuoteChar = ' ';
+
 		for (final var line : lines) {
 			final var trimmed = line.trim();
+
+			if (insideOpenQuote) {
+				current.valueLines.addAll(pendingComments);
+				pendingComments.clear();
+				current.valueLines.add(line);
+				if (lineClosesQuote(trimmed, openQuoteChar)) {
+					insideOpenQuote = false;
+				}
+				continue;
+			}
+
 			if (trimmed.isEmpty() || trimmed.startsWith("#")) {
 				pendingComments.add(line);
 				continue;
 			}
 
-			final var colonIndex = findUnquotedColon(trimmed);
-			if (colonIndex >= 0 && !trimmed.startsWith("-")) {
+			final var indent = countLeadingSpaces(line);
+			final var colonIndex = findYamlKeyColon(trimmed);
+			final var isKey = colonIndex >= 0
+					&& !trimmed.startsWith("-")
+					&& !isContinuationLine(indent, current, stack);
 
-				final var indent = countLeadingSpaces(line);
-
+			if (isKey) {
 				while (stack.size() > 1 && stack.get(stack.size() - 1).indent >= indent) {
 					stack.remove(stack.size() - 1);
 				}
@@ -98,6 +114,17 @@ final class YamlCommentWriter {
 				parent.children.put(node.key, node);
 				stack.add(node);
 				current = node;
+
+				final var afterColon = trimmed.substring(colonIndex + 1).trim();
+				if (!afterColon.isEmpty()) {
+					final var firstChar = afterColon.charAt(0);
+					if (firstChar == '"' || firstChar == '\'') {
+						if (!isQuoteClosed(afterColon, firstChar)) {
+							insideOpenQuote = true;
+							openQuoteChar = firstChar;
+						}
+					}
+				}
 			} else {
 				current.valueLines.addAll(pendingComments);
 				pendingComments.clear();
@@ -159,18 +186,22 @@ final class YamlCommentWriter {
 		if (node.keyLine != null) {
 			var line = node.keyLine;
 
-			if (configNode != null && !configNode.virtual() && configNode.raw() != null && !configNode.isMap() && !configNode.isList()) {
-				final var colonIndex = findUnquotedColon(line);
+			final var hasMultiLineValue = !node.valueLines.isEmpty();
+			if (!hasMultiLineValue && configNode != null && !configNode.virtual()
+					&& configNode.raw() != null && !configNode.isMap() && !configNode.isList()) {
+				final var colonIndex = findYamlKeyColon(line.trim());
 				if (colonIndex >= 0) {
-					final var prefix = line.substring(0, colonIndex + 1);
-					final var afterColon = line.substring(colonIndex + 1);
+					final var trimmed = line.trim();
+					final var indentStr = line.substring(0, line.length() - line.stripLeading().length());
+					final var keyPart = trimmed.substring(0, colonIndex);
+					final var afterColon = trimmed.substring(colonIndex + 1);
 					final var inlineComment = extractInlineComment(afterColon);
 					final var newValue = formatScalar(configNode.raw());
-					
+
 					if (inlineComment != null) {
-						line = prefix + " " + newValue + " " + inlineComment;
+						line = indentStr + keyPart + ": " + newValue + " " + inlineComment;
 					} else {
-						line = prefix + " " + newValue;
+						line = indentStr + keyPart + ": " + newValue;
 					}
 				}
 			}
@@ -197,7 +228,12 @@ final class YamlCommentWriter {
 		return count;
 	}
 
-	private static int findUnquotedColon(final String str) {
+	/**
+	 * Finds a colon that is a valid YAML key separator: not inside quotes,
+	 * and followed by a space or at the end of the string.
+	 * This prevents matching colons inside values like MiniMessage tags or URLs.
+	 */
+	private static int findYamlKeyColon(final String str) {
 		boolean inSingleQuote = false;
 		boolean inDoubleQuote = false;
 		for (int i = 0; i < str.length(); i++) {
@@ -207,10 +243,75 @@ final class YamlCommentWriter {
 			} else if (c == '"' && !inSingleQuote) {
 				inDoubleQuote = !inDoubleQuote;
 			} else if (c == ':' && !inSingleQuote && !inDoubleQuote) {
-				return i;
+				if (i + 1 == str.length() || str.charAt(i + 1) == ' ') {
+					return i;
+				}
 			}
 		}
 		return -1;
+	}
+
+	/**
+	 * Returns true if the given line is a continuation line of a multi-line scalar.
+	 * A continuation line has greater indentation than the current node AND
+	 * the current node already has value lines (meaning its scalar started on a
+	 * previous line) OR the current node is a list-item context.
+	 */
+	private static boolean isContinuationLine(final int indent, final YamlNode current, final java.util.List<YamlNode> stack) {
+		if (stack.size() <= 1) {
+			return false;
+		}
+		if (!current.valueLines.isEmpty() && indent > current.indent) {
+			return true;
+		}
+		final var parent = stack.get(stack.size() - 1);
+		if (!parent.children.isEmpty() && indent > current.indent + 1) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Returns true if the given string value has a closed quote of the given type.
+	 */
+	private static boolean isQuoteClosed(final String value, final char quoteChar) {
+		boolean open = false;
+		for (int i = 0; i < value.length(); i++) {
+			final char c = value.charAt(i);
+			if (c == quoteChar) {
+				if (quoteChar == '\'' && i + 1 < value.length() && value.charAt(i + 1) == '\'') {
+					i++;
+				} else {
+					open = !open;
+				}
+			} else if (c == '\\' && quoteChar == '"' && i + 1 < value.length()) {
+				i++; 
+			}
+		}
+		return !open;
+	}
+
+	/**
+	 * Returns true if this continuation line closes an open quote.
+	 */
+	private static boolean lineClosesQuote(final String trimmed, final char quoteChar) {
+		boolean inEscape = false;
+		int lastQuoteIndex = -1;
+		for (int i = 0; i < trimmed.length(); i++) {
+			final char c = trimmed.charAt(i);
+			if (inEscape) {
+				inEscape = false;
+			} else if (c == '\\' && quoteChar == '"') {
+				inEscape = true;
+			} else if (c == quoteChar) {
+				if (quoteChar == '\'' && i + 1 < trimmed.length() && trimmed.charAt(i + 1) == '\'') {
+					i++; 
+				} else {
+					lastQuoteIndex = i;
+				}
+			}
+		}
+		return lastQuoteIndex >= 0;
 	}
 
 	private static String unquote(final String str) {

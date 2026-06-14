@@ -101,7 +101,7 @@ public final class Container<C> {
 	 * @param updater the function to apply to the current config
 	 * @return {@code true} if the update and save were successful, {@code false} otherwise
 	 */
-	public boolean update(UnaryOperator<C> updater) {
+	public boolean update(final UnaryOperator<C> updater) {
 		try {
 			final C newConfig = updater.apply(config.get());
 			config.set(newConfig);
@@ -174,7 +174,7 @@ public final class Container<C> {
 
 			final var node = loader.load();
 
-			URL defaultUrl = clazz.getClassLoader().getResource(fileName);
+			final URL defaultUrl = clazz.getClassLoader().getResource(fileName);
 			if (defaultUrl != null) {
 				try {
 					final var defaultLoader = YamlConfigurationLoader.builder()
@@ -190,7 +190,7 @@ public final class Container<C> {
 
 			final C newConfig = node.get(typeToken);
 
-			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
+			final Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 			container.saveWithComments();
 			return container;
 		} catch (final IOException exception) {
@@ -303,7 +303,7 @@ public final class Container<C> {
 
 			final C newConfig = node.get(typeToken);
 
-			Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
+			final Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 			container.saveWithComments();
 			return container;
 		} catch (final IOException exception) {

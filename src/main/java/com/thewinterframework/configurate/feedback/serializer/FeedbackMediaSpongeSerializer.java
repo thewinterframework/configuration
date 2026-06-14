@@ -2,7 +2,11 @@ package com.thewinterframework.configurate.feedback.serializer;
 
 import com.thewinterframework.configurate.feedback.media.FeedbackMedia;
 import com.thewinterframework.configurate.feedback.media.MediaType;
-import com.thewinterframework.configurate.feedback.media.impl.*;
+import com.thewinterframework.configurate.feedback.media.impl.ActionBarMedia;
+import com.thewinterframework.configurate.feedback.media.impl.BossBarMedia;
+import com.thewinterframework.configurate.feedback.media.impl.ChatMedia;
+import com.thewinterframework.configurate.feedback.media.impl.SoundMedia;
+import com.thewinterframework.configurate.feedback.media.impl.TitleMedia;
 import com.thewinterframework.configurate.serializer.ConfigurateSerializer;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.spongepowered.configurate.ConfigurationNode;
@@ -26,7 +30,7 @@ public class FeedbackMediaSpongeSerializer implements TypeSerializer<FeedbackMed
     }
 
     @Override
-    public FeedbackMedia deserialize(Type type, ConfigurationNode node) throws SerializationException {
+    public FeedbackMedia deserialize(final Type type, final ConfigurationNode node) throws SerializationException {
         final var typeNode = node.node("type");
         if (typeNode.empty() || typeNode.virtual()) {
             if (node.isList()) {
@@ -41,20 +45,20 @@ public class FeedbackMediaSpongeSerializer implements TypeSerializer<FeedbackMed
     }
 
     @Override
-    public void serialize(Type type, @Nullable FeedbackMedia obj, ConfigurationNode node) throws SerializationException {
+    public void serialize(final Type type, @Nullable final FeedbackMedia obj, final ConfigurationNode node) throws SerializationException {
         if (obj == null) {
             return;
         }
 
         final var mediaType = obj.type();
         final var parent = node.parent();
-        if (obj instanceof ChatMedia media && (parent == null || !parent.isList())) { // simple format - node: "message"
-            if (media.messages().size() == 1) {
-                node.set(media.messages().get(0));
+        if (obj instanceof ChatMedia(java.util.List<String> messages) && (parent == null || !parent.isList())) { // simple format - node: "message"
+            if (messages.size() == 1) {
+                node.set(messages.get(0));
                 return;
             }
 
-            node.setList(String.class, media.messages());
+            node.setList(String.class, messages);
             return;
         }
 

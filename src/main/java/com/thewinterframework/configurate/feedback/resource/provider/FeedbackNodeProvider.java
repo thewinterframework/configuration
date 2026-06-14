@@ -10,12 +10,12 @@ public class FeedbackNodeProvider implements FeedbackProvider {
 
     private final ConfigurationNode parentNode;
 
-    public FeedbackNodeProvider(ConfigurationNode parentNode) {
+    public FeedbackNodeProvider(final ConfigurationNode parentNode) {
         this.parentNode = parentNode;
     }
 
     @Override
-    public @Nullable Feedback getFeedback(String key) throws SerializationException {
+    public @Nullable Feedback getFeedback(final String key) throws SerializationException {
         final var node = parentNode.node(
                 Splitter.on('.')
                         .splitToList(key)

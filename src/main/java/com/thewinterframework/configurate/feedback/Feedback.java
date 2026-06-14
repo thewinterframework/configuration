@@ -28,7 +28,7 @@ public interface Feedback {
      */
     @Deprecated
     @ApiStatus.ScheduledForRemoval(inVersion = "2.0.0")
-    default void sendFeedback(Audience audience, TagResolver... resolver) {
+    default void sendFeedback(final Audience audience, final TagResolver... resolver) {
         send(audience, resolver);
     }
 
@@ -47,7 +47,7 @@ public interface Feedback {
      * @return the component representation of the feedback
      * @throws IllegalStateException if the feedback cannot be converted to a component
      */
-    default @NotNull Component asComponent(TagResolver... resolver) throws IllegalStateException {
+    default @NotNull Component asComponent(final TagResolver... resolver) throws IllegalStateException {
         return ComponentJoiner.newLine(this.asComponents(resolver));
     }
 
@@ -66,16 +66,16 @@ public interface Feedback {
      * @param message the message to send
      * @return the created feedback
      */
-    static Feedback plain(Component message) {
+    static Feedback plain(final Component message) {
         return new Feedback() {
 
             @Override
-            public void send(Audience audience, TagResolver... resolver) {
+            public void send(final Audience audience, final TagResolver... resolver) {
                 audience.sendMessage(message);
             }
 
             @Override
-            public @NotNull List<Component> asComponents(TagResolver... resolver) throws IllegalStateException {
+            public @NotNull List<Component> asComponents(final TagResolver... resolver) throws IllegalStateException {
                 return List.of(message);
             }
         };
@@ -87,7 +87,7 @@ public interface Feedback {
      * @param message the message to send
      * @return the created feedback
      */
-    static Feedback plain(String message) {
+    static Feedback plain(final String message) {
         return plain(Component.text(message));
     }
 
@@ -97,7 +97,7 @@ public interface Feedback {
      * @param path the path to get the feedback from
      * @return the feedback
      */
-    static Feedback path(String path) {
+    static Feedback path(final String path) {
         return FeedbackResourceManager.instance().getFeedback(path);
     }
 

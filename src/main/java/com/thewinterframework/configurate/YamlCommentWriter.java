@@ -34,7 +34,7 @@ final class YamlCommentWriter {
 		YamlNode defaultTree = parse(defaultLines);
 
 		// 2. Read user lines (if file exists)
-		YamlNode userTree;
+		final YamlNode userTree;
 		if (Files.exists(configPath) && Files.size(configPath) > 0) {
 			final var userLines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
 			userTree = parse(userLines);
@@ -63,7 +63,7 @@ final class YamlCommentWriter {
 		Map<String, YamlNode> children = new LinkedHashMap<>();
 	}
 
-	private static YamlNode parse(List<String> lines) {
+	private static YamlNode parse(final List<String> lines) {
 		final var root = new YamlNode();
 		var current = root;
 		final var stack = new ArrayList<YamlNode>();
@@ -135,7 +135,7 @@ final class YamlCommentWriter {
 		return root;
 	}
 
-	private static void mergeTrees(YamlNode userNode, YamlNode defaultNode, int indentDelta) {
+	private static void mergeTrees(final YamlNode userNode, final YamlNode defaultNode, final int indentDelta) {
 		for (final var entry : defaultNode.children.entrySet()) {
 			final var key = entry.getKey();
 			final var defChild = entry.getValue();
@@ -150,7 +150,7 @@ final class YamlCommentWriter {
 		}
 	}
 
-	private static YamlNode cloneAndAdjustIndent(YamlNode node, int indentDelta) {
+	private static YamlNode cloneAndAdjustIndent(final YamlNode node, final int indentDelta) {
 		final var clone = new YamlNode();
 		clone.key = node.key;
 		clone.indent = node.indent + indentDelta;
@@ -170,7 +170,7 @@ final class YamlCommentWriter {
 		return clone;
 	}
 
-	private static String adjustIndent(String line, int delta) {
+	private static String adjustIndent(final String line, final int delta) {
 		if (delta == 0 || line.trim().isEmpty()) return line;
 		if (delta > 0) {
 			return " ".repeat(delta) + line;
@@ -180,7 +180,7 @@ final class YamlCommentWriter {
 		}
 	}
 
-	private static void serialize(YamlNode node, ConfigurationNode configNode, List<String> out) {
+	private static void serialize(final YamlNode node, final ConfigurationNode configNode, final List<String> out) {
 		out.addAll(node.comments);
 
 		if (node.keyLine != null) {
@@ -265,11 +265,8 @@ final class YamlCommentWriter {
 			return true;
 		}
 		final var parent = stack.get(stack.size() - 1);
-		if (!parent.children.isEmpty() && indent > current.indent + 1) {
-			return true;
-		}
-		return false;
-	}
+        return !parent.children.isEmpty() && indent > current.indent + 1;
+    }
 
 	/**
 	 * Returns true if the given string value has a closed quote of the given type.
@@ -371,9 +368,6 @@ final class YamlCommentWriter {
 			}
 		}
 		final char first = value.charAt(0);
-		if (first == '-' || first == '?' || first == ' ') {
-			return true;
-		}
-		return false;
-	}
+        return first == '-' || first == '?' || first == ' ';
+    }
 }

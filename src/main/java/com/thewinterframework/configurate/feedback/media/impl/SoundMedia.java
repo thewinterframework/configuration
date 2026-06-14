@@ -18,7 +18,7 @@ import java.util.Objects;
 
 public record SoundMedia(Sound sound) implements FeedbackMedia {
     @Override
-    public void sendMedia(Audience audience, TagResolver... resolvers) {
+    public void sendMedia(final Audience audience, final TagResolver... resolvers) {
         audience.playSound(sound, Emitter.self());
     }
 
@@ -41,16 +41,16 @@ public record SoundMedia(Sound sound) implements FeedbackMedia {
         }
 
         @Override
-        public void serialize(Type type, @Nullable FeedbackMedia obj, ConfigurationNode node) throws SerializationException {
-            if (!(obj instanceof SoundMedia media)) {
+        public void serialize(final Type type, @Nullable final FeedbackMedia obj, final ConfigurationNode node) throws SerializationException {
+            if (!(obj instanceof SoundMedia(Sound sound1))) {
                 throw new SerializationException("Invalid media type");
             }
 
             node.node("type").set(MediaType.SOUND.name().toLowerCase());
-            node.node("name").set(media.sound().name().asString());
-            node.node("source").set(media.sound().source().name().toLowerCase());
-            node.node("volume").set(media.sound().volume());
-            node.node("pitch").set(media.sound().pitch());
+            node.node("name").set(sound1.name().asString());
+            node.node("source").set(sound1.source().name().toLowerCase());
+            node.node("volume").set(sound1.volume());
+            node.node("pitch").set(sound1.pitch());
         }
     }
 }

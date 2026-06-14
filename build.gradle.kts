@@ -25,16 +25,12 @@ deployer {
         password.set(secret("winterSigningPassphrase"))
     }
 
-    // 1. Artifact definition.
-    // https://opensource.deepmedia.io/deployer/artifacts
     content {
         component {
-            fromJava() // shorthand for fromSoftwareComponent("java")
+            fromJava()
         }
     }
 
-    // 2. Project details.
-    // https://opensource.deepmedia.io/deployer/configuration
     projectInfo {
         description.set("The framework to make plugin creation easier than ever.")
         url.set("https://github.com/thewinterframework/configuration")
@@ -46,8 +42,6 @@ deployer {
         artifactId.set(project.name)
     }
 
-    // 3. Central Portal configuration.
-    // https://opensource.deepmedia.io/deployer/repos/central-portal
     centralPortalSpec {
         signing.key.set(secret("winterSigningKey"))
         signing.password.set(secret("winterSigningPassphrase"))
@@ -58,8 +52,10 @@ deployer {
 
 dependencies {
     // Core
-    compileOnlyApi("com.thewinterframework:core:1.0.6")
-    annotationProcessor("com.thewinterframework:core:1.0.6")
+    compileOnlyApi("com.thewinterframework:core:2.0.0")
+    annotationProcessor("com.thewinterframework:core:2.0.0")
+
+    annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 
     // Configurate
     compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")

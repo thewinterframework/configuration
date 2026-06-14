@@ -15,7 +15,7 @@ import java.lang.reflect.Type;
  */
 public class ComponentSerializer implements TypeSerializer<Component> {
 	@Override
-	public Component deserialize(@NotNull Type type, ConfigurationNode node) {
+	public Component deserialize(@NotNull final Type type, final ConfigurationNode node) {
 		final var stringValue = node.getString();
 		if (stringValue == null) {
 			return null;
@@ -25,7 +25,7 @@ public class ComponentSerializer implements TypeSerializer<Component> {
 	}
 
 	@Override
-	public void serialize(@NotNull Type type, @Nullable Component obj, @NotNull ConfigurationNode node) throws SerializationException {
+	public void serialize(@NotNull final Type type, @Nullable final Component obj, @NotNull final ConfigurationNode node) throws SerializationException {
 		if (obj == null) {
 			node.set(null);
 			return;

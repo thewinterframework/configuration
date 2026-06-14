@@ -15,13 +15,13 @@ import java.lang.reflect.Type;
 public class FeedbackSpongeSerializer implements TypeSerializer<Feedback> {
 
     @Override
-    public Feedback deserialize(Type type, ConfigurationNode node) throws SerializationException {
+    public Feedback deserialize(final Type type, final ConfigurationNode node) throws SerializationException {
         return new FeedbackImpl(node.getList(FeedbackMedia.class));
     }
 
     @Override
-    public void serialize(Type type, Feedback obj, ConfigurationNode node) throws SerializationException {
-        if (obj instanceof FeedbackMediaContainer container) {
+    public void serialize(final Type type, final Feedback obj, final ConfigurationNode node) throws SerializationException {
+        if (obj instanceof final FeedbackMediaContainer container) {
             node.setList(FeedbackMedia.class, container.medias());
         } else {
             throw new SerializationException("Invalid feedback type");

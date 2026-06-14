@@ -27,18 +27,18 @@ public record ActionBarMedia(String message) implements FeedbackMedia {
 
     public static class ActionBarMediaSerializer implements TypeSerializer<FeedbackMedia> {
         @Override
-        public FeedbackMedia deserialize(Type type, ConfigurationNode node) {
+        public FeedbackMedia deserialize(final Type type, final ConfigurationNode node) {
             return new ActionBarMedia(Objects.requireNonNull(node.node("message").getString()));
         }
 
         @Override
-        public void serialize(Type type, @Nullable FeedbackMedia obj, ConfigurationNode node) throws SerializationException {
-            if (!(obj instanceof ActionBarMedia media)) {
+        public void serialize(final Type type, @Nullable final FeedbackMedia obj, final ConfigurationNode node) throws SerializationException {
+            if (!(obj instanceof ActionBarMedia(final String message1))) {
                 throw new SerializationException("Invalid media type");
             }
 
             node.node("type").set(MediaType.ACTIONBAR.name().toLowerCase());
-            node.node("message").set(media.message());
+            node.node("message").set(message1);
         }
     }
 

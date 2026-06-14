@@ -35,7 +35,7 @@ public class ConfigurateSerializersRegistry {
 	 * @param clazz the class to register
 	 * @param serializer the serializer to register
 	 */
-	public void registerSerializer(Type clazz, TypeSerializer<?> serializer) {
+	public void registerSerializer(final Type clazz, final TypeSerializer<?> serializer) {
 		serializers.put(clazz, serializer);
 	}
 
@@ -44,7 +44,7 @@ public class ConfigurateSerializersRegistry {
 	 *
 	 * @param collection the collection to register
 	 */
-	public void registerCollection(TypeSerializerCollection collection) {
+	public void registerCollection(final TypeSerializerCollection collection) {
 		this.collections.add(collection);
 	}
 

@@ -36,7 +36,7 @@ public record TitleMedia(String title, @Nullable String subtitle, Duration fadeI
     public static class TitleMediaSerializer implements TypeSerializer<FeedbackMedia> {
 
         @Override
-        public FeedbackMedia deserialize(Type type, ConfigurationNode node) {
+        public FeedbackMedia deserialize(final Type type, final ConfigurationNode node) {
             return new TitleMedia(
                     Objects.requireNonNull(node.node("title").getString()),
                     node.node("subtitle").getString(),
@@ -47,17 +47,17 @@ public record TitleMedia(String title, @Nullable String subtitle, Duration fadeI
         }
 
         @Override
-        public void serialize(Type type, @Nullable FeedbackMedia obj, ConfigurationNode node) throws SerializationException {
-            if (!(obj instanceof TitleMedia media)) {
+        public void serialize(final Type type, @Nullable final FeedbackMedia obj, final ConfigurationNode node) throws SerializationException {
+            if (!(obj instanceof TitleMedia(String title1, String subtitle1, Duration in, Duration stay1, Duration out))) {
                 throw new SerializationException("Invalid media type");
             }
 
             node.node("type").set(MediaType.TITLE.name().toLowerCase());
-            node.node("title").set(media.title());
-            node.node("subtitle").set(media.subtitle());
-            node.node("fade-in").set(media.fadeIn().getSeconds());
-            node.node("stay").set(media.stay().getSeconds());
-            node.node("fade-out").set(media.fadeOut().getSeconds());
+            node.node("title").set(title1);
+            node.node("subtitle").set(subtitle1);
+            node.node("fade-in").set(in.getSeconds());
+            node.node("stay").set(stay1.getSeconds());
+            node.node("fade-out").set(out.getSeconds());
         }
     }
 }

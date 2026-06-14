@@ -18,7 +18,7 @@ import java.util.Objects;
 
 public record BossBarMedia(String message, float progress, Color color, Overlay overlay) implements FeedbackMedia {
     @Override
-    public void sendMedia(Audience audience, TagResolver... resolvers) {
+    public void sendMedia(final Audience audience, final TagResolver... resolvers) {
         final var name = ComponentUtils.miniMessage(message, resolvers);
         final var bossBar = BossBar.bossBar(name, progress, color, overlay);
         audience.showBossBar(bossBar);
@@ -31,7 +31,7 @@ public record BossBarMedia(String message, float progress, Color color, Overlay 
 
     public static class BossBarMediaSerializer implements TypeSerializer<FeedbackMedia> {
         @Override
-        public FeedbackMedia deserialize(Type type, ConfigurationNode node) {
+        public FeedbackMedia deserialize(final Type type, final ConfigurationNode node) {
             return new BossBarMedia(
                 Objects.requireNonNull(node.node("message").getString()),
                 node.node("progress").getFloat(1.0f),
@@ -41,16 +41,16 @@ public record BossBarMedia(String message, float progress, Color color, Overlay 
         }
 
         @Override
-        public void serialize(Type type, @Nullable FeedbackMedia obj, ConfigurationNode node) throws SerializationException {
-            if (!(obj instanceof BossBarMedia media)) {
+        public void serialize(final Type type, @Nullable final FeedbackMedia obj, final ConfigurationNode node) throws SerializationException {
+            if (!(obj instanceof BossBarMedia(String message1, float progress1, Color color1, Overlay overlay1))) {
                 throw new SerializationException("Invalid media type");
             }
 
             node.node("type").set(MediaType.BOSSBAR.name().toLowerCase());
-            node.node("message").set(media.message());
-            node.node("progress").set(media.progress());
-            node.node("color").set(media.color().name().toLowerCase());
-            node.node("overlay").set(media.overlay().name().toLowerCase());
+            node.node("message").set(message1);
+            node.node("progress").set(progress1);
+            node.node("color").set(color1.name().toLowerCase());
+            node.node("overlay").set(overlay1.name().toLowerCase());
         }
     }
 }

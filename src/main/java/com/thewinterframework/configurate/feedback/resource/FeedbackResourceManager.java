@@ -20,7 +20,7 @@ public class FeedbackResourceManager {
         return INSTANCE;
     }
 
-    public FeedbackResourceManager registerProvider(WinterPlugin plugin, ConfigurationNode node) {
+    public FeedbackResourceManager registerProvider(final WinterPlugin plugin, final ConfigurationNode node) {
         final var namespace = plugin.namespace();
         final var provider = new FeedbackNodeProvider(node);
 
@@ -33,7 +33,7 @@ public class FeedbackResourceManager {
      *
      * @param plugin the plugin that provides the feedback
      */
-    public FeedbackResourceManager unregisterProvider(WinterPlugin plugin) {
+    public FeedbackResourceManager unregisterProvider(final WinterPlugin plugin) {
         final var namespace = plugin.namespace();
         providers.remove(namespace);
         return this;
@@ -46,7 +46,7 @@ public class FeedbackResourceManager {
      * @return the feedback with the specified key, or the key as feedback chat message if not found
      */
     @NotNull
-    public Feedback getFeedback(String key) {
+    public Feedback getFeedback(final String key) {
         try {
             for (final var provider : providers.values()) {
                 final var feedback = provider.getFeedback(key);
@@ -54,7 +54,7 @@ public class FeedbackResourceManager {
                     return feedback;
                 }
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new RuntimeException("Failed to get feedback with key " + key, e);
         }
 

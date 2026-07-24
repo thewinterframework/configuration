@@ -52,8 +52,8 @@ deployer {
 
 dependencies {
     // Core
-    compileOnlyApi("com.thewinterframework:core:2.0.0")
-    annotationProcessor("com.thewinterframework:core:2.0.0")
+    compileOnlyApi("com.thewinterframework:core:2.1.1")
+    annotationProcessor("com.thewinterframework:core:2.1.1")
 
     annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 

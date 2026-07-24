@@ -31,7 +31,6 @@ public class ConfigurateAnnotationProcessor implements WinterAnnotationProcessor
     @Override
     public void onRoundStart(final ProcessorContext ctx) {
         ctx.wireModule(ConfigurateModule.class);
-        ctx.wireModule(getModulePackage(ctx) + ".ConfigurationsModule");
     }
 
     @Override
@@ -84,6 +83,8 @@ public class ConfigurateAnnotationProcessor implements WinterAnnotationProcessor
                     return result.toString();
                 })
                 .write(ctx, fullClassName);
+
+        ctx.wireModule(getModulePackage(ctx) + ".ConfigurationsModule");
     }
 
     public String getModulePackage(final ProcessorContext context) {

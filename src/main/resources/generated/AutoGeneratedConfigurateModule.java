@@ -61,7 +61,7 @@ public class ConfigurationsModule extends AbstractModule implements PluginModule
                 plugin.getExpressionResolver().addContext("<CONFIG_NAME>", container.get());
                 return container;
             } catch (Exception e) {
-                throw new ProvisionException("Fallo crítico al cargar la configuración <CONFIG_NAME>", e);
+                throw new ProvisionException("Error while loading <CONFIG_NAME>", e);
             }
         }
     }

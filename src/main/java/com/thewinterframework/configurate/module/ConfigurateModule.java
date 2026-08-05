@@ -44,7 +44,7 @@ public class ConfigurateModule implements ProcessorModule {
         final var start = System.currentTimeMillis();
 
         try {
-            final var serializerWireClass = Class.forName(ClassWireProcessor.canonicalWiredClassName(plugin, ConfigurateSerializer.class));
+            final var serializerWireClass = Class.forName(ClassWireProcessor.canonicalWiredClassName(plugin, ConfigurateSerializer.class), true, plugin.getClass().getClassLoader());
             final var serializerWire = (ClassListWire) serializerWireClass.getConstructors()[0].newInstance();
 
             for (final var discoveredSerializer : serializerWire.getWiredClasses()) {
@@ -53,7 +53,7 @@ public class ConfigurateModule implements ProcessorModule {
                 registry.registerSerializer(type, (TypeSerializer<?>) instance);
             }
 
-            final var providerWireClass = Class.forName(ClassWireProcessor.canonicalWiredClassName(plugin, ConfigurateSerializerProvider.class));
+            final var providerWireClass = Class.forName(ClassWireProcessor.canonicalWiredClassName(plugin, ConfigurateSerializerProvider.class), true, plugin.getClass().getClassLoader());
             final var providerWire = (ClassListWire) providerWireClass.getConstructors()[0].newInstance();
 
             for (final var provider : providerWire.getWiredClasses()) {

@@ -59,6 +59,16 @@ dependencies {
 
     // Configurate
     compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")
+
+    // Tests
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testImplementation("org.slf4j:slf4j-api:2.0.16")
+    testImplementation("org.spongepowered:configurate-yaml:4.2.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.withType<JavaCompile> {

@@ -10,7 +10,6 @@ import org.spongepowered.configurate.yaml.NodeStyle;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
 import java.io.IOException;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.net.URL;
@@ -56,27 +55,15 @@ public final class Container<C> {
 
 	/**
 	 * Reloads the configuration file.
-	 * @return {@code true} if the save was successful, {@code false} otherwise
+	 * @return {@code true} if the reload was successful, {@code false} otherwise
 	 */
 	public boolean reload() {
 		try {
 			final ConfigurationNode reloadedNode = loader.load();
-			if (defaultUrl != null) {
-				try {
-					final var defaultLoader = YamlConfigurationLoader.builder()
-							.nodeStyle(NodeStyle.BLOCK)
-							.url(defaultUrl)
-							.build();
-					final var defaultNode = defaultLoader.load();
-					reloadedNode.mergeFrom(defaultNode);
-				} catch (final Exception exception) {
-					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
-				}
-			}
 			final C newConfig = mapper.load(reloadedNode);
 			this.node.from(reloadedNode);
 			config.set(newConfig);
-			return saveWithComments();
+			return true;
 		} catch (final Exception exception) {
 			logger.error("Could not reload {} configuration file", clazz.getSimpleName(), exception);
 			return false;
@@ -122,13 +109,13 @@ public final class Container<C> {
 	}
 
 	/**
-	 * Saves the current configuration to the file, preserving comments
-	 * from the resource template when available.
+	 * Saves the current configuration to the file while preserving its existing
+	 * comments, custom keys, and formatting when a resource template is available.
 	 */
 	private boolean saveWithComments() {
 		try {
 			if (defaultUrl != null && configPath != null) {
-				YamlCommentWriter.writeWithComments(configPath, defaultUrl, node);
+				YamlCommentWriter.writeWithComments(configPath, node);
 			} else {
 				loader.save(node);
 			}
@@ -173,26 +160,11 @@ public final class Container<C> {
 					.build();
 
 			final var node = loader.load();
-
 			final URL defaultUrl = clazz.getClassLoader().getResource(fileName);
-			if (defaultUrl != null) {
-				try {
-					final var defaultLoader = YamlConfigurationLoader.builder()
-							.nodeStyle(NodeStyle.BLOCK)
-							.url(defaultUrl)
-							.build();
-					final var defaultNode = defaultLoader.load();
-					node.mergeFrom(defaultNode);
-				} catch (final Exception exception) {
-					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
-				}
-			}
 
 			final C newConfig = node.get(typeToken);
 
-			final Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
-			container.saveWithComments();
-			return container;
+			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
 			throw exception;
@@ -251,7 +223,7 @@ public final class Container<C> {
 			final Class<C> clazz,
 			final String file
 	) throws IOException {
-		return load(logger, path, clazz, file, opts -> opts.shouldCopyDefaults(true));
+		return load(logger, path, clazz, file, opts -> opts.shouldCopyDefaults(false));
 	}
 
 	/**
@@ -286,26 +258,11 @@ public final class Container<C> {
 					.build();
 
 			final var node = loader.load();
-
 			final URL defaultUrl = clazzLoader.getResource(fileName);
-			if (defaultUrl != null) {
-				try {
-					final var defaultLoader = YamlConfigurationLoader.builder()
-							.nodeStyle(NodeStyle.BLOCK)
-							.url(defaultUrl)
-							.build();
-					final var defaultNode = defaultLoader.load();
-					node.mergeFrom(defaultNode);
-				} catch (final Exception exception) {
-					logger.error("Could not merge default values into {} configuration", clazz.getSimpleName(), exception);
-				}
-			}
 
 			final C newConfig = node.get(typeToken);
 
-			final Container<C> container = new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
-			container.saveWithComments();
-			return container;
+			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
 			throw exception;
@@ -313,7 +270,7 @@ public final class Container<C> {
 	}
 
 	private static Path generateFile(final Class<?> clazz, final Path path, final String name) throws IOException {
-		if (Files.exists(path) && Files.size(path) > 0) {
+		if (Files.exists(path)) {
 			return path;
 		}
 
@@ -325,11 +282,7 @@ public final class Container<C> {
 				return path;
 			}
 
-			if (Files.exists(path)) {
-				Files.copy(rsc, path, StandardCopyOption.REPLACE_EXISTING);
-			} else {
-				Files.copy(rsc, path);
-			}
+			Files.copy(rsc, path);
 			return path;
 		}
 	}

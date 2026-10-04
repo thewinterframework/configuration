@@ -3,7 +3,6 @@ package com.thewinterframework.configurate;
 import org.spongepowered.configurate.ConfigurationNode;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,38 +18,18 @@ final class YamlCommentWriter {
 
 	static void writeWithComments(
 			final Path configPath,
-			final URL resourceUrl,
-			final ConfigurationNode mergedNode
+			final ConfigurationNode configNode
 	) throws IOException {
-		
-		// 1. Read default lines
-		final var defaultLines = new ArrayList<String>();
-		try (final var reader = new BufferedReader(new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
-			String line;
-			while ((line = reader.readLine()) != null) {
-				defaultLines.add(line);
-			}
-		}
-		YamlNode defaultTree = parse(defaultLines);
+		final var userLines = Files.exists(configPath)
+				? Files.readAllLines(configPath, StandardCharsets.UTF_8)
+				: List.<String>of();
+		final var userTree = parse(userLines);
 
-		// 2. Read user lines (if file exists)
-		final YamlNode userTree;
-		if (Files.exists(configPath) && Files.size(configPath) > 0) {
-			final var userLines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
-			userTree = parse(userLines);
-		} else {
-			userTree = defaultTree;
-			defaultTree = new YamlNode();
-		}
-
-		// 3. Merge missing keys from defaultTree into userTree
-		mergeTrees(userTree, defaultTree, 0);
-
-		// 4. Serialize back to lines, updating values from mergedNode
+		// Only serialize keys that are already present in the user's file. Missing
+		// keys may have been removed intentionally and must not be restored.
 		final var outputLines = new ArrayList<String>();
-		serialize(userTree, mergedNode, outputLines);
+		serialize(userTree, configNode, outputLines);
 
-		// 5. Write to disk
 		Files.write(configPath, outputLines, StandardCharsets.UTF_8);
 	}
 
@@ -133,51 +112,6 @@ final class YamlCommentWriter {
 		}
 		root.valueLines.addAll(pendingComments);
 		return root;
-	}
-
-	private static void mergeTrees(final YamlNode userNode, final YamlNode defaultNode, final int indentDelta) {
-		for (final var entry : defaultNode.children.entrySet()) {
-			final var key = entry.getKey();
-			final var defChild = entry.getValue();
-
-			if (!userNode.children.containsKey(key)) {
-				userNode.children.put(key, cloneAndAdjustIndent(defChild, indentDelta));
-			} else {
-				final var userChild = userNode.children.get(key);
-				final var newDelta = userChild.indent - defChild.indent;
-				mergeTrees(userChild, defChild, newDelta);
-			}
-		}
-	}
-
-	private static YamlNode cloneAndAdjustIndent(final YamlNode node, final int indentDelta) {
-		final var clone = new YamlNode();
-		clone.key = node.key;
-		clone.indent = node.indent + indentDelta;
-
-		for (final var comment : node.comments) {
-			clone.comments.add(adjustIndent(comment, indentDelta));
-		}
-		if (node.keyLine != null) {
-			clone.keyLine = adjustIndent(node.keyLine, indentDelta);
-		}
-		for (final var valLine : node.valueLines) {
-			clone.valueLines.add(adjustIndent(valLine, indentDelta));
-		}
-		for (final var entry : node.children.entrySet()) {
-			clone.children.put(entry.getKey(), cloneAndAdjustIndent(entry.getValue(), indentDelta));
-		}
-		return clone;
-	}
-
-	private static String adjustIndent(final String line, final int delta) {
-		if (delta == 0 || line.trim().isEmpty()) return line;
-		if (delta > 0) {
-			return " ".repeat(delta) + line;
-		} else {
-			final var remove = Math.min(-delta, countLeadingSpaces(line));
-			return line.substring(remove);
-		}
 	}
 
 	private static void serialize(final YamlNode node, final ConfigurationNode configNode, final List<String> out) {

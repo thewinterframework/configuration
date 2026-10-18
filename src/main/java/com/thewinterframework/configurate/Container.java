@@ -18,6 +18,18 @@ import java.util.function.UnaryOperator;
 
 /**
  * A container for a configuration file.
+ *
+ * <p>String values support {@code ${VARIABLE}} environment references and
+ * {@code ${VARIABLE:-default}} fallbacks for missing or empty variables.
+ * Use {@code $${VARIABLE}} for a literal reference. Resolution happens before
+ * deserialization on load and reload, including nested maps and lists.
+ * Missing variables without a fallback fail the load. Values are resolved
+ * once and are never parsed as YAML.</p>
+ *
+ * <p>The backing node retains the original references. Saving or updating
+ * unrelated fields preserves them; explicitly changing a referenced field
+ * through {@link #update(UnaryOperator)} replaces its reference.</p>
+ *
  * @param <C> the type of the configuration object
  */
 public final class Container<C> {
@@ -60,7 +72,7 @@ public final class Container<C> {
 	public boolean reload() {
 		try {
 			final ConfigurationNode reloadedNode = loader.load();
-			final C newConfig = mapper.load(reloadedNode);
+			final C newConfig = mapper.load(EnvironmentVariables.resolve(reloadedNode));
 			this.node.from(reloadedNode);
 			config.set(newConfig);
 			return true;
@@ -76,7 +88,7 @@ public final class Container<C> {
 	}
 
 	/**
-	 * Gets the configuration node.
+	 * Gets the configuration node, retaining environment references for saving.
 	 * @return the configuration node
 	 */
 	public ConfigurationNode getNode() {
@@ -90,9 +102,14 @@ public final class Container<C> {
 	 */
 	public boolean update(final UnaryOperator<C> updater) {
 		try {
+			final var previousNode = node.copy();
+			previousNode.set(typeToken, config.get());
 			final C newConfig = updater.apply(config.get());
+			final var updatedNode = node.copy();
+			updatedNode.set(typeToken, newConfig);
+			EnvironmentVariables.preserveExpressions(node, previousNode, updatedNode);
+			node.from(updatedNode);
 			config.set(newConfig);
-			node.set(typeToken, newConfig);
 			return saveWithComments();
 		} catch (final Exception exception) {
 			logger.error("Could not update {} configuration", clazz.getSimpleName(), exception);
@@ -162,7 +179,7 @@ public final class Container<C> {
 			final var node = loader.load();
 			final URL defaultUrl = clazz.getClassLoader().getResource(fileName);
 
-			final C newConfig = node.get(typeToken);
+			final C newConfig = EnvironmentVariables.resolve(node).get(typeToken);
 
 			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 		} catch (final IOException exception) {
@@ -173,6 +190,7 @@ public final class Container<C> {
 
 	/**
 	 * Loads a configuration node.
+	 * Environment references in string values are resolved in the returned node.
 	 * @param logger the logger
 	 * @param path the path to the configuration file
 	 * @param file the name of the configuration file
@@ -200,7 +218,7 @@ public final class Container<C> {
 					.path(configPath)
 					.build();
 
-			return loader.load();
+			return EnvironmentVariables.resolve(loader.load());
 		} catch (final IOException exception) {
 			logger.error("Could not load configuration file", exception);
 			throw exception;
@@ -260,7 +278,7 @@ public final class Container<C> {
 			final var node = loader.load();
 			final URL defaultUrl = clazzLoader.getResource(fileName);
 
-			final C newConfig = node.get(typeToken);
+			final C newConfig = EnvironmentVariables.resolve(node).get(typeToken);
 
 			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
 		} catch (final IOException exception) {

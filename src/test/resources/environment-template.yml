@@ -1,0 +1,10 @@
+# Environment configuration
+label: original
+host: "${WINTER_CONFIG_TEST_VALUE}" # Keep this reference
+port: "${WINTER_CONFIG_TEST_PORT}"
+enabled: "${WINTER_CONFIG_TEST_ENABLED}"
+literal: "$${WINTER_CONFIG_TEST_VALUE}"
+servers:
+  - "${WINTER_CONFIG_TEST_VALUE}"
+replicas:
+  - host: "${WINTER_CONFIG_TEST_VALUE}"

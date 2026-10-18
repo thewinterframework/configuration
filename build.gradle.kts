@@ -69,6 +69,9 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    environment("WINTER_CONFIG_TEST_VALUE", "test-secret")
+    environment("WINTER_CONFIG_TEST_PORT", "25570")
+    environment("WINTER_CONFIG_TEST_ENABLED", "true")
 }
 
 tasks.withType<JavaCompile> {

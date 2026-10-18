@@ -5,6 +5,8 @@ plugins {
     `java-library`
 }
 
+val winterVersion: String by project
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -52,8 +54,8 @@ deployer {
 
 dependencies {
     // Core
-    compileOnlyApi("com.thewinterframework:core:2.1.1")
-    annotationProcessor("com.thewinterframework:core:2.1.1")
+    compileOnlyApi("com.thewinterframework:core:$winterVersion")
+    annotationProcessor("com.thewinterframework:core:$winterVersion")
 
     annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 

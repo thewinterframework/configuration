@@ -3,6 +3,8 @@ package com.thewinterframework.configurate.module;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.thewinterframework.component.ComponentModule;
+import com.thewinterframework.component.annotation.SyncLoading;
 import com.thewinterframework.configurate.Container;
 import com.thewinterframework.configurate.feedback.resource.FeedbackResourceManager;
 import com.thewinterframework.configurate.serializer.ConfigurateSerializer;
@@ -13,7 +15,7 @@ import com.thewinterframework.plugin.WinterPlugin;
 import com.thewinterframework.processor.clazz.ClassWireProcessor;
 import com.thewinterframework.processor.module.ProcessorModule;
 import com.thewinterframework.processor.wire.ClassListWire;
-import com.thewinterframework.service.ReloadServiceManager;
+import com.thewinterframework.plugin.module.PluginModule;
 import com.thewinterframework.utils.reflect.Reflections;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.serialize.TypeSerializer;
@@ -22,15 +24,22 @@ import org.spongepowered.configurate.serialize.TypeSerializerCollection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * A module that provides support for Configurate serializers using the new Wire system.
  */
+@SyncLoading
 public class ConfigurateModule implements ProcessorModule {
 
     private final ConfigurateSerializersRegistry registry = new ConfigurateSerializersRegistry();
 
     private String langFileName = "lang";
+
+    @Override
+    public List<Class<? extends PluginModule>> depends(final WinterPlugin plugin) {
+        return List.of(ComponentModule.class);
+    }
 
     @Override
     public void configure(final Binder binder) {
@@ -83,7 +92,7 @@ public class ConfigurateModule implements ProcessorModule {
     @Override
     public boolean onEnable(final WinterPlugin plugin) {
         final var path = plugin.getInjector().getInstance(Key.get(Path.class, DataFolder.class));
-        final var reloadManager = plugin.getInjector().getInstance(ReloadServiceManager.class);
+        final var reloads = plugin.getInjector().getInstance(ConfigurationReloads.class);
 
         if (existsInClassLoader(plugin, path.resolve(langFileName + ".yml"), langFileName + ".yml")) {
             final Runnable load = () -> {
@@ -105,9 +114,15 @@ public class ConfigurateModule implements ProcessorModule {
             };
 
             load.run();
-            reloadManager.addOnReload(ConfigurateModule.class, load);
+            reloads.register(load);
         }
 
+        return true;
+    }
+
+    @Override
+    public boolean onDisable(final WinterPlugin plugin) {
+        FeedbackResourceManager.instance().unregisterProvider(plugin);
         return true;
     }
 

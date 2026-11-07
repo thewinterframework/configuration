@@ -1,17 +1,13 @@
 package com.thewinterframework.configurate.feedback;
 
 import com.thewinterframework.component.ComponentJoiner;
-import com.thewinterframework.component.ComponentUtils;
-import com.thewinterframework.configurate.feedback.media.impl.ChatMedia;
 import com.thewinterframework.configurate.feedback.resource.FeedbackResourceManager;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.spongepowered.configurate.objectmapping.ConfigSerializable;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -19,18 +15,6 @@ import java.util.List;
  */
 @ConfigSerializable
 public interface Feedback {
-
-    /**
-     * Sends the feedback to the specified {@link Audience}.
-     *
-     * @param audience the audience to send the feedback to
-     * @param resolver the tag resolvers to use
-     */
-    @Deprecated
-    @ApiStatus.ScheduledForRemoval(inVersion = "2.0.0")
-    default void sendFeedback(final Audience audience, final TagResolver... resolver) {
-        send(audience, resolver);
-    }
 
     /**
      * Sends the feedback to the specified {@link Audience}.

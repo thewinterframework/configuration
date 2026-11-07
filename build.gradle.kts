@@ -66,11 +66,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("org.slf4j:slf4j-api:2.0.16")
     testImplementation("org.spongepowered:configurate-yaml:4.2.0")
+    testImplementation("com.thewinterframework:core:$winterVersion")
+    testImplementation("net.kyori:adventure-text-minimessage:4.18.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {
     useJUnitPlatform()
+    systemProperty("configuration.test.classpath", sourceSets.test.get().runtimeClasspath.asPath)
     environment("WINTER_CONFIG_TEST_VALUE", "test-secret")
     environment("WINTER_CONFIG_TEST_PORT", "25570")
     environment("WINTER_CONFIG_TEST_ENABLED", "true")

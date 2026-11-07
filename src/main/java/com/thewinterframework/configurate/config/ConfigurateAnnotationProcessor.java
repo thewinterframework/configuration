@@ -3,13 +3,12 @@ package com.thewinterframework.configurate.config;
 import com.google.auto.service.AutoService;
 import com.thewinterframework.configurate.module.ConfigurateModule;
 import com.thewinterframework.processor.context.ProcessorContext;
-import com.thewinterframework.processor.handler.WinterAnnotationProcessor;
+import com.thewinterframework.processor.extension.WinterProcessorExtension;
 import com.thewinterframework.processor.template.TemplateBuilder;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
-import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -18,23 +17,23 @@ import java.util.stream.Collectors;
 /**
  * An annotation processor that generates a module for all classes annotated with {@link Configurate}.
  */
-@AutoService(WinterAnnotationProcessor.class)
-public class ConfigurateAnnotationProcessor implements WinterAnnotationProcessor {
+@AutoService(WinterProcessorExtension.class)
+public class ConfigurateAnnotationProcessor implements WinterProcessorExtension {
 
     private static final Pattern ELEMENT_PATTERN = Pattern.compile("(?:<el>)([\\s\\S]*?)(?:<\\/el>)");
 
     @Override
-    public Set<Class<? extends Annotation>> getSupportedAnnotations() {
-        return Set.of(Configurate.class);
+    public Set<String> supportedAnnotationNames() {
+        return Set.of(Configurate.class.getCanonicalName());
     }
 
     @Override
-    public void onRoundStart(final ProcessorContext ctx) {
+    public void onRoundStarted(final ProcessorContext ctx) {
         ctx.wireModule(ConfigurateModule.class);
     }
 
     @Override
-    public void handle(final TypeElement annotation, final Set<? extends Element> elements, final ProcessorContext ctx) {
+    public void process(final TypeElement annotation, final Set<? extends Element> elements, final ProcessorContext ctx) {
         final var validElements = elements.stream()
                 .filter(e -> e.getKind() == ElementKind.CLASS || e.getKind() == ElementKind.RECORD)
                 .collect(Collectors.toSet());

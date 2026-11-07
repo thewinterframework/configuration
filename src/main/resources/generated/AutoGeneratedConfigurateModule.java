@@ -36,15 +36,15 @@ public class ConfigurationsModule extends AbstractModule implements PluginModule
         private final Logger logger;
         private final Path dataFolder;
         private final ConfigurateSerializersRegistry registry;
-        private final com.thewinterframework.service.ReloadServiceManager reloadManager;
+        private final com.thewinterframework.configurate.module.ConfigurationReloads reloads;
 
         @Inject
-        public <CONFIG_NAME>ContainerProvider(WinterPlugin plugin, Logger logger, @DataFolder Path dataFolder, ConfigurateSerializersRegistry registry, com.thewinterframework.service.ReloadServiceManager reloadManager) {
+        public <CONFIG_NAME>ContainerProvider(WinterPlugin plugin, Logger logger, @DataFolder Path dataFolder, ConfigurateSerializersRegistry registry, com.thewinterframework.configurate.module.ConfigurationReloads reloads) {
             this.plugin = plugin;
             this.logger = logger;
             this.dataFolder = dataFolder;
             this.registry = registry;
-            this.reloadManager = reloadManager;
+            this.reloads = reloads;
         }
 
         @Override
@@ -57,7 +57,7 @@ public class ConfigurationsModule extends AbstractModule implements PluginModule
                         options -> options.serializers(builder -> builder.registerAll(registry.getSerializers()))
                 );
 
-                reloadManager.addOnReload(com.thewinterframework.configurate.module.ConfigurateModule.class, container::reload);
+                reloads.register(container::reload);
                 plugin.getExpressionResolver().addContext("<CONFIG_NAME>", container.get());
                 return container;
             } catch (Exception e) {

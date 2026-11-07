@@ -1,0 +1,12 @@
+workers: 2
+feature:
+  enabled: true
+  limit: 12
+  token: example
+optional:
+  enabled: false
+values:
+  sample: true
+aliases: [sample]
+label: "${WINTER_CONFIG_TEST_VALUE}"
+unknown-template-key: ignored

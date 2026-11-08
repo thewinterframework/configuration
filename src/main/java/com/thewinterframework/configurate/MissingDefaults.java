@@ -1,6 +1,5 @@
 package com.thewinterframework.configurate;
 
-import com.thewinterframework.configurate.config.FillMissingKeys;
 import com.thewinterframework.configurate.config.OptionalNode;
 import io.leangen.geantyref.GenericTypeReflector;
 import org.spongepowered.configurate.BasicConfigurationNode;
@@ -47,14 +46,7 @@ final class MissingDefaults {
 		var completion = new MissingDefaults(original, options);
 		Node target = yaml.compose(new StringReader(original));
 		if (target instanceof MappingNode current) {
-			if (current.getValue().isEmpty() && canComplete(current)) {
-				var missing = completion.collect(null, mapping, mapper);
-				if (!missing.isEmpty()) {
-					completion.insert(current, missing);
-				}
-			} else {
-				completion.collect(current, mapping, mapper);
-			}
+			completion.collect(current, mapping, mapper);
 		} else if (target == null) {
 			var missing = completion.collect(null, mapping, mapper);
 			if (!missing.isEmpty()) {
@@ -74,7 +66,8 @@ final class MissingDefaults {
 
 	private List<NodeTuple> collect(MappingNode target, MappingNode defaults, ObjectMapper<?> mapper)
 			throws SerializationException {
-		if (target != null && (target.getValue().isEmpty() || !canComplete(target))) {
+		if (target != null && (target.getValue().isEmpty() || target.getAnchor() != null || !Tag.MAP.equals(target.getTag())
+				|| target.getValue().stream().anyMatch(entry -> Tag.MERGE.equals(entry.getKeyNode().getTag())))) {
 			return List.of();
 		}
 		var existing = entries(target);
@@ -110,17 +103,6 @@ final class MissingDefaults {
 				} else if (current != null && current.getValueNode() instanceof MappingNode currentMap) {
 					this.collect(currentMap, defaultMap, nestedMapper);
 				}
-			} else if (type.isAnnotationPresent(FillMissingKeys.class) && Map.class.isAssignableFrom(nested)
-					&& value instanceof MappingNode defaultMap && current != null
-					&& current.getValueNode() instanceof MappingNode currentMap && canComplete(currentMap)) {
-				var keys = entries(currentMap);
-				var missingKeys = defaultMap.getValue().stream()
-						.filter(entry -> entry.getKeyNode() instanceof ScalarNode scalar
-								&& Tag.STR.equals(scalar.getTag()) && !keys.containsKey(scalar.getValue()))
-						.toList();
-				if (!missingKeys.isEmpty()) {
-					this.insert(currentMap, missingKeys);
-				}
 			}
 			if (current == null) {
 				missing.add(new NodeTuple(fallback.getKeyNode(), value));
@@ -133,12 +115,6 @@ final class MissingDefaults {
 	}
 
 	private void insert(MappingNode target, List<NodeTuple> missing) {
-		if (target.getValue().isEmpty()) {
-			int offset = this.original.offsetByCodePoints(0, target.getEndMark().getIndex() - 1);
-			String pair = render(missing, DumperOptions.FlowStyle.FLOW).strip();
-			this.inserts.put(offset, pair.substring(1, pair.length() - 1));
-			return;
-		}
 		var firstKey = target.getValue().get(0).getKeyNode().getStartMark();
 		int offset = this.original.offsetByCodePoints(0, firstKey.getIndex());
 		boolean flow = target.getFlowStyle() == DumperOptions.FlowStyle.FLOW;
@@ -165,11 +141,6 @@ final class MissingDefaults {
 		var text = new StringBuilder();
 		value.lines().forEach(line -> text.append(prefix).append(line).append(this.newline));
 		this.inserts.put(lineStart, text.toString());
-	}
-
-	private static boolean canComplete(MappingNode mapping) {
-		return mapping.getAnchor() == null && Tag.MAP.equals(mapping.getTag())
-				&& mapping.getValue().stream().noneMatch(entry -> Tag.MERGE.equals(entry.getKeyNode().getTag()));
 	}
 
 	private static String render(List<NodeTuple> entries, DumperOptions.FlowStyle style) {

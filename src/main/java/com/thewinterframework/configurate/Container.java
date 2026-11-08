@@ -1,5 +1,6 @@
 package com.thewinterframework.configurate;
 
+import com.thewinterframework.configurate.config.Configurate;
 import io.leangen.geantyref.TypeToken;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -9,10 +10,14 @@ import org.spongepowered.configurate.objectmapping.ObjectMapper;
 import org.spongepowered.configurate.yaml.NodeStyle;
 import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
@@ -69,8 +74,14 @@ public final class Container<C> {
 	 * Reloads the configuration file.
 	 * @return {@code true} if the reload was successful, {@code false} otherwise
 	 */
-	public boolean reload() {
+	public synchronized boolean reload() {
 		try {
+			if (completesDefaults(clazz, defaultUrl)) {
+				final var loaded = loadCompleted(loader, mapper, typeToken, defaultUrl, configPath);
+				this.node.from(loaded.node());
+				config.set(loaded.value());
+				return true;
+			}
 			final ConfigurationNode reloadedNode = loader.load();
 			final C newConfig = mapper.load(EnvironmentVariables.resolve(reloadedNode));
 			this.node.from(reloadedNode);
@@ -100,7 +111,7 @@ public final class Container<C> {
 	 * @param updater the function to apply to the current config
 	 * @return {@code true} if the update and save were successful, {@code false} otherwise
 	 */
-	public boolean update(final UnaryOperator<C> updater) {
+	public synchronized boolean update(final UnaryOperator<C> updater) {
 		try {
 			final var previousNode = node.copy();
 			previousNode.set(typeToken, config.get());
@@ -121,7 +132,7 @@ public final class Container<C> {
 	 * Saves the current configuration to the file.
 	 * @return {@code true} if the save was successful, {@code false} otherwise
 	 */
-	public boolean save() {
+	public synchronized boolean save() {
 		return saveWithComments();
 	}
 
@@ -161,6 +172,18 @@ public final class Container<C> {
 			final String file,
 			final UnaryOperator<ConfigurationOptions> options
 	) throws IOException {
+		return load(logger, path, clazz, file, clazz, false, options);
+	}
+
+	private static <C> Container<C> load(
+			final Logger logger,
+			final Path path,
+			final Class<C> clazz,
+			final String file,
+			final Class<?> resourceClass,
+			final boolean explicitResourceClass,
+			final UnaryOperator<ConfigurationOptions> options
+	) throws IOException {
 		try {
 			final var mapper = ObjectMapper.factory().get(clazz);
 			final var typeToken = TypeToken.get(clazz);
@@ -169,19 +192,22 @@ public final class Container<C> {
 				Files.createDirectories(path);
 			}
 
-			final var configPath = generateFile(clazz, path.resolve(fileName), fileName);
+			final var configPath = generateFile(resourceClass, path.resolve(fileName), fileName);
 			final var loader = YamlConfigurationLoader.builder()
 					.defaultOptions(options)
 					.nodeStyle(NodeStyle.BLOCK)
 					.path(configPath)
 					.build();
 
+			final URL defaultUrl = resourceClass.getClassLoader().getResource(fileName);
+			if (completesDefaults(clazz, defaultUrl)) {
+				final var loaded = loadCompleted(loader, mapper, typeToken, defaultUrl, configPath);
+				return new Container<>(loaded.value(), clazz, typeToken, loader, loaded.node(), mapper, logger, defaultUrl, configPath);
+			}
 			final var node = loader.load();
-			final URL defaultUrl = clazz.getClassLoader().getResource(fileName);
-
-			final C newConfig = EnvironmentVariables.resolve(node).get(typeToken);
-
-			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
+			final var saveTemplate = explicitResourceClass ? resourceClass.getResource(fileName) : defaultUrl;
+			return new Container<>(EnvironmentVariables.resolve(node).get(typeToken), clazz, typeToken,
+					loader, node, mapper, logger, saveTemplate, configPath);
 		} catch (final IOException exception) {
 			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
 			throw exception;
@@ -261,31 +287,58 @@ public final class Container<C> {
 			final String file,
 			final Class<?> clazzLoader
 	) throws IOException {
+		return load(logger, path, clazz, file, clazzLoader, true, UnaryOperator.identity());
+	}
+
+	private static boolean completesDefaults(Class<?> clazz, URL template) {
+		final var annotation = clazz.getAnnotation(Configurate.class);
+		return template != null && annotation != null && annotation.fillMissing();
+	}
+
+	private static <C> Loaded<C> loadCompleted(YamlConfigurationLoader loader, ObjectMapper<C> mapper,
+			TypeToken<C> type, URL template, Path path) throws IOException {
+		final String original = Files.readString(path);
+		final String defaults;
+		try (var input = template.openStream()) {
+			defaults = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+		}
+		final var options = loader.defaultOptions().shouldCopyDefaults(false);
+		final String completed;
 		try {
-			final var mapper = ObjectMapper.factory().get(clazz);
-			final var typeToken = TypeToken.get(clazz);
-			final var fileName = file.endsWith(".yml") ? file : file + ".yml";
-			if (!Files.exists(path)) {
-				Files.createDirectories(path);
+			completed = MissingDefaults.complete(original, defaults, mapper, options);
+		} catch (org.yaml.snakeyaml.error.YAMLException error) {
+			throw new IOException("Could not read YAML for default completion: " + path, error);
+		}
+		final var node = YamlConfigurationLoader.builder()
+				.defaultOptions(options)
+				.source(() -> new BufferedReader(new StringReader(completed)))
+				.build().load();
+		final C value = EnvironmentVariables.resolve(node.copy()).get(type);
+		if (value == null) {
+			throw new IOException("Could not deserialize configuration " + path);
+		}
+		if (!original.equals(completed)) {
+			writeCompleted(path, original, completed);
+		}
+		return new Loaded<>(node, value);
+	}
+
+	private static void writeCompleted(Path path, String original, String completed) throws IOException {
+		final var target = path.toRealPath();
+		final var temporary = Files.createTempFile(target.getParent(), ".winter-config-", ".yml");
+		try {
+			Files.copy(target, temporary, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+			Files.writeString(temporary, completed);
+			if (!Files.readString(target).equals(original)) {
+				throw new IOException("Configuration changed during default completion: " + path);
 			}
-
-			final var configPath = generateFile(clazzLoader, path.resolve(fileName), fileName);
-			final var loader = YamlConfigurationLoader.builder()
-					.nodeStyle(NodeStyle.BLOCK)
-					.path(configPath)
-					.build();
-
-			final var node = loader.load();
-			final URL defaultUrl = clazzLoader.getResource(fileName);
-
-			final C newConfig = EnvironmentVariables.resolve(node).get(typeToken);
-
-			return new Container<>(newConfig, clazz, typeToken, loader, node, mapper, logger, defaultUrl, configPath);
-		} catch (final IOException exception) {
-			logger.error("Could not load {} configuration file", clazz.getSimpleName(), exception);
-			throw exception;
+			Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} finally {
+			Files.deleteIfExists(temporary);
 		}
 	}
+
+	private record Loaded<C>(ConfigurationNode node, C value) {}
 
 	private static Path generateFile(final Class<?> clazz, final Path path, final String name) throws IOException {
 		if (Files.exists(path)) {

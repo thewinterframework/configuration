@@ -57,7 +57,11 @@ public class ConfigurationsModule extends AbstractModule implements PluginModule
                         options -> options.serializers(builder -> builder.registerAll(registry.getSerializers()))
                 );
 
-                reloads.register(container::reload);
+                reloads.register(() -> {
+                    if (!container.reload()) {
+                        throw new IllegalStateException("Could not reload <CONFIG_NAME>.yml");
+                    }
+                });
                 plugin.getExpressionResolver().addContext("<CONFIG_NAME>", container.get());
                 return container;
             } catch (Exception e) {

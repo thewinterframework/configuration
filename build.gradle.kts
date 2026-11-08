@@ -61,6 +61,7 @@ dependencies {
 
     // Configurate
     compileOnlyApi("org.spongepowered:configurate-yaml:4.2.0")
+    implementation("org.yaml:snakeyaml:2.3")
 
     // Tests
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")

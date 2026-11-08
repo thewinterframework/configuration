@@ -7,6 +7,9 @@ optional:
   enabled: false
 values:
   sample: true
+messages:
+  custom: default
+  missing: new
 aliases: [sample]
 label: "${WINTER_CONFIG_TEST_VALUE}"
 unknown-template-key: ignored
